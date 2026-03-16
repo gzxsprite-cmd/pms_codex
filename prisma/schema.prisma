@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TimelineStatus {
+  NOT_STARTED
+  ON_TRACK
+  DONE
+  DELAYED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+model Project {
+  id              String              @id @default(cuid())
+  projectId       String              @unique
+  name            String
+  customer        String
+  productPlatform String
+  plantRegion     String?
+  phase           String
+  status          String
+  priority        String?
+  sopDate         DateTime?
+  startDate       DateTime?
+  endDate         DateTime?
+  projectManager  String?
+  salesOwner      String?
+  comment         String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  teamMembers     ProjectTeamMember[]
+  milestones      ProjectMilestone[]
+  tasks           ProjectTask[]
+}
+
+model ProjectTeamMember {
+  id              String   @id @default(cuid())
+  project         Project  @relation(fields: [projectRef], references: [id], onDelete: Cascade)
+  projectRef      String
+  roleName        String
+  personName      String?
+  email           String?
+  department      String?
+  companyFunction String?
+  comment         String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([projectRef])
+}
+
+model ProjectMilestone {
+  id            String         @id @default(cuid())
+  project       Project        @relation(fields: [projectRef], references: [id], onDelete: Cascade)
+  projectRef    String
+  milestoneCode String
+  milestoneName String
+  baselineDate  DateTime?
+  actualDate    DateTime?
+  status        TimelineStatus @default(NOT_STARTED)
+  comment       String?
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tasks         ProjectTask[]
+
+  @@index([projectRef])
+}
+
+model ProjectTask {
+  id                 String          @id @default(cuid())
+  project            Project         @relation(fields: [projectRef], references: [id], onDelete: Cascade)
+  projectRef         String
+  taskCode           String
+  parentTaskId       String?
+  taskName           String
+  owner              String?
+  status             TaskStatus      @default(NOT_STARTED)
+  startDate          DateTime?
+  dueDate            DateTime?
+  progress           Int             @default(0)
+  relatedMilestoneId String?
+  relatedMilestone   ProjectMilestone? @relation(fields: [relatedMilestoneId], references: [id], onDelete: SetNull)
+  comment            String?
+  sortOrder          Int             @default(0)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([projectRef])
+  @@index([relatedMilestoneId])
+}
